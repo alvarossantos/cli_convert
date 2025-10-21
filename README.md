@@ -1,13 +1,12 @@
-### Exemplo de Uso do Cli-Convert
+### Example of Using Cli-Convert
 
-##### input (entrada) of archive
+##### input of archive
 
-##### output (saida) of archive
+##### output of archive
 
-##### from (tipo)
+##### from (type)
 
-##### to (para)
-
+##### to
 
 ```
 Terminal:

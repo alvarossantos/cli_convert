@@ -13,6 +13,7 @@ func main() {
 	output := flag.String("output", "", "saida")
 	from := flag.String("from", "", "origin format")
 	to := flag.String("to", "", "target format")
+	delimiterFlag := flag.String("delimiter", ",", "csv delimiter")
 
 	// Processa as flags e atribui os comandos as variaveis, obrigatório o uso do --
 	flag.Parse()
@@ -39,7 +40,12 @@ func main() {
 			os.Exit(1)
 		}
 	case "csv":
-		if err := validateFileCSV(*input); err != nil {
+		runeArray := []rune(*delimiterFlag)
+		if len(runeArray) != 1 {
+			fmt.Println("Delimiter must be a single character")
+			os.Exit(1)
+		}
+		if err := validateFileCSV(*input, runeArray[0]); err != nil {
 			fmt.Printf("Error validating CSV: %v\n", err)
 			os.Exit(1)
 		}

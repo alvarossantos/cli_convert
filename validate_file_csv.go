@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-func validateFileCSV(path string) error {
+func validateFileCSV(path string, delimiter rune) error {
 	info, err := os.Stat(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -32,10 +32,12 @@ func validateFileCSV(path string) error {
 	}
 	defer file.Close()
 
-	csv := csv.NewReader(file)
+	reader := csv.NewReader(file)
+	reader.Comma = delimiter
+	reader.LazyQuotes = true
 	expectedCols := 0
 	for {
-		read, err := csv.Read()
+		read, err := reader.Read()
 		if err == io.EOF {
 			break
 		}

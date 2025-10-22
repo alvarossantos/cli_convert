@@ -6,8 +6,6 @@ import (
 	"os"
 )
 
-
-
 func main() {
 
 	// Definição das flags de linha de comando
@@ -20,10 +18,9 @@ func main() {
 	flag.Parse()
 
 	if err := validateFileJSON(*input); err != nil {
-    	fmt.Printf("Error validating JSON: %v\n", err)
-    	os.Exit(1)
+		fmt.Printf("Error validating JSON: %v\n", err)
+		os.Exit(1)
 	}
-
 
 	// Exibe os valores das flags
 	fmt.Printf("Input: %s\n", *input)

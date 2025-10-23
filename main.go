@@ -9,14 +9,21 @@ import (
 func main() {
 
 	// Definição das flags de linha de comando
-	input := flag.String("input", "", "entrada")
-	output := flag.String("output", "", "saida")
-	from := flag.String("from", "", "origin format")
-	to := flag.String("to", "", "target format")
-	delimiterFlag := flag.String("delimiter", ",", "csv delimiter")
+	convertCmd := flag.NewFlagSet("convert", flag.ExitOnError)
+	input := convertCmd.String("input", "", "entrada")
+	output := convertCmd.String("output", "", "saida")
+	from := convertCmd.String("from", "", "origin format")
+	to := convertCmd.String("to", "", "target format")
+	delimiterFlag := convertCmd.String("delimiter", ",", "csv delimiter")
 
 	// Processa as flags e atribui os comandos as variaveis, obrigatório o uso do --
-	flag.Parse()
+	if len(os.Args) > 1 && os.Args[1] == "convert" {
+		convertCmd.Parse(os.Args[2:])
+	}
+	if len(os.Args) < 2 || os.Args[1] != "convert" {
+		fmt.Println("Expected 'convert' command")
+		os.Exit(1)
+	}
 
 	if *input == "" {
 		fmt.Println("Missing required --input file")

@@ -54,6 +54,11 @@ func main() {
 			fmt.Printf("Error validating CSV: %v\n", err)
 			os.Exit(1)
 		}
+	case "xml":
+		if err := validateFileXML(*input); err != nil {
+			fmt.Printf("Error validating XML: %v\n", err)
+			os.Exit(1)
+		}
 	default:
 		fmt.Printf("Unsupported format: %s\n", *from)
 		os.Exit(1)

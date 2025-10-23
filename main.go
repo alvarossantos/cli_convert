@@ -33,6 +33,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	if *to == "" {
+		fmt.Println("Missing required --to format")
+		os.Exit(1)
+	}
+
 	switch *from {
 	case "json":
 		if err := validateFileJSON(*input); err != nil {
@@ -51,11 +56,6 @@ func main() {
 		}
 	default:
 		fmt.Printf("Unsupported format: %s\n", *from)
-		os.Exit(1)
-	}
-
-	if *to == "" {
-		fmt.Println("Missing required --to format")
 		os.Exit(1)
 	}
 

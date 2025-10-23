@@ -13,13 +13,12 @@ Currently, the project validates the structure of the input file and displays th
   Checks whether the file exists, is not empty, and contains valid data.
 * **Command-Line Interface (CLI)**
 
-  Supports the parameters `--input`, `--output`, `--from`, and `--to`.
+  Supports the parameters `--input`, `--output`, `--from`,  `--to` and `--delimiter`.
 * **Extensible Architecture**
 
   Modular design makes it easy to add new format conversion functions in the future.
 
 ---
-
 
 ### 📄 Project Description
 
@@ -44,5 +43,5 @@ With a clean and modular code structure, developers can easily extend it to supp
 Terminal:
 
 go build
-./cli-convert --input input.json --output output.csv --from json --to csv
+./cli-convert --input input.json --output output.csv --from json --to csv --delimiter ";" # The default delimiter is "," if the --delimiter option is not provided
 ```

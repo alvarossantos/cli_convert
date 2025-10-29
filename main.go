@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -51,21 +52,127 @@ func main() {
 			fmt.Printf("Error validating JSON: %v\n", err)
 			os.Exit(1)
 		}
+
+		switch *to {
+		case "csv":
+			runeArray := []rune(*delimiterFlag)
+			if len(runeArray) != 1 {
+				fmt.Println("Delimiter must be a single character")
+				os.Exit(1)
+			}
+
+			if !strings.HasSuffix(*output, ".csv") {
+				*output += ".csv"
+			}
+
+			if err := convertJsonToCsv(*input, *output, runeArray[0]); err != nil {
+				fmt.Printf("Error converting JSON to CSV: %v\n", err)
+				os.Exit(1)
+			}
+			fmt.Println("Conversion from JSON to CSV completed successfully.")
+			os.Exit(0)
+
+		case "xml":
+			if !strings.HasSuffix(*output, ".xml") {
+				*output += ".xml"
+			}
+
+			if err := convertJsonToXml(*input, *output); err != nil {
+				fmt.Printf("Error converting JSON to XML: %v", err)
+				os.Exit(1)
+			}
+
+			fmt.Println("Conversion from JSON to XML completed sucessfully.")
+			os.Exit(0)
+
+		default:
+			fmt.Printf("Unssuported conversion from JSON to %s", *to)
+			os.Exit(1)
+		}
 	case "csv":
 		runeArray := []rune(*delimiterFlag)
 		if len(runeArray) != 1 {
 			fmt.Println("Delimiter must be a single character")
 			os.Exit(1)
 		}
+
 		if err := validateFileCSV(*input, runeArray[0]); err != nil {
 			fmt.Printf("Error validating CSV: %v\n", err)
 			os.Exit(1)
 		}
+
+		switch *to {
+		case "json":
+			if !strings.HasSuffix(*output, ".json") {
+				*output += ".json"
+			}
+
+			if err := convertCsvToJson(*input, *output, runeArray[0]); err != nil {
+				fmt.Printf("Error converting CSV to JSON: %v", err)
+				os.Exit(1)
+			}
+			fmt.Println("Conversion from CSV to JSON completed sucessfully.")
+			os.Exit(0)
+		case "xml":
+			if !strings.HasSuffix(*output, ".xml") {
+				*output += ".xml"
+			}
+
+			if err := convertCsvToXml(*input, *output, runeArray[0]); err != nil {
+				fmt.Printf("Error converting CSV to XML: %v", err)
+				os.Exit(1)
+			}
+			fmt.Println("Conversion from CSV to XML completed sucessfully.")
+			os.Exit(0)
+		default:
+			fmt.Printf("Unssuported conversion from JSON to %s", *to)
+			os.Exit(1)
+		}
+
 	case "xml":
 		if err := validateFileXML(*input); err != nil {
 			fmt.Printf("Error validating XML: %v\n", err)
 			os.Exit(1)
 		}
+
+		switch *to {
+		case "json":
+			if !strings.HasSuffix(*output, ".json") {
+				*output += ".json"
+			}
+
+			if err := convertXmlToJson(*input, *output); err != nil {
+				fmt.Printf("Error converting XML to JSON: %v", err)
+				os.Exit(1)
+			}
+
+			fmt.Println("Conversion from XML to JSON completed sucessfully.")
+			os.Exit(0)
+
+		case "csv":
+			runeArray := []rune(*delimiterFlag)
+			if len(runeArray) != 1 {
+				fmt.Println("Delimiter must be a single character")
+				os.Exit(1)
+			}
+
+			if !strings.HasSuffix(*output, ".csv") {
+				*output += ".csv"
+			}
+
+			if err := convertXmlToCsv(*input, *output, runeArray[0]); err != nil {
+				fmt.Printf("Error converting XML to CSV: %v", err)
+				os.Exit(1)
+			}
+
+			fmt.Println("Conversion from XML to CSV completed sucessfully.")
+			os.Exit(0)
+
+		default:
+			fmt.Printf("Unsuported conversion from XML to %s", *to)
+			os.Exit(1)
+		}
+
 	default:
 		fmt.Printf("Unsupported format: %s\n", *from)
 		os.Exit(1)

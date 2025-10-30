@@ -4,8 +4,8 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
-	"io"
 	"os"
+	"strings"
 )
 
 func validateFileCSV(path string, delimiter rune) error {
@@ -34,23 +34,31 @@ func validateFileCSV(path string, delimiter rune) error {
 
 	reader := csv.NewReader(file)
 	reader.Comma = delimiter
-	reader.LazyQuotes = true
-	expectedCols := 0
-	for {
-		read, err := reader.Read()
-		if err == io.EOF {
-			break
-		}
-		
-		if err != nil {
-			return err
+	reader.FieldsPerRecord = -1
+
+	records, err := reader.ReadAll()
+	if err != nil {
+		return fmt.Errorf("failed to parse CSV: %v", err)
+	}
+
+	if len(records) == 0 {
+		return errors.New("CSV file is empty")
+	}
+
+	expectedCols := len(records[0])
+
+	if expectedCols == 1 {
+		return fmt.Errorf("CSV appears to have only 1 column. Wrong delimiter? (current: '%c')", delimiter)
+	}
+
+	for i, record := range records[1:] {
+		if len(record) != expectedCols {
+			return fmt.Errorf("row %d: expected %d columns, but got %d", i+2, expectedCols, len(record))
 		}
 
-		if expectedCols == 0 {
-			expectedCols = len(read)
-		} else {
-			if len(read) != expectedCols {
-				return fmt.Errorf("inconsistent number of columns: expected %d, got %d", expectedCols, len(read))
+		for j, value := range record {
+			if strings.TrimSpace(value) == "" {
+				return fmt.Errorf("row %d: column '%s' is empty", i+2, records[0][j])
 			}
 		}
 	}

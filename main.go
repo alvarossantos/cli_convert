@@ -16,6 +16,7 @@ func main() {
 	from := convertCmd.String("from", "", "origin format")
 	to := convertCmd.String("to", "", "target format")
 	delimiterFlag := convertCmd.String("delimiter", ",", "csv delimiter")
+	root := convertCmd.String("root", "root", "root element name for XML output (default: 'root')")
 
 	// Processa as flags e atribui os comandos as variaveis, obrigatório o uso do --
 	if len(os.Args) > 1 && os.Args[1] == "convert" {
@@ -77,7 +78,7 @@ func main() {
 				*output += ".xml"
 			}
 
-			if err := convertJsonToXml(*input, *output); err != nil {
+			if err := convertJsonToXml(*input, *output, *root); err != nil {
 				fmt.Printf("Error converting JSON to XML: %v", err)
 				os.Exit(1)
 			}
@@ -118,7 +119,7 @@ func main() {
 				*output += ".xml"
 			}
 
-			if err := convertCsvToXml(*input, *output, runeArray[0]); err != nil {
+			if err := convertCsvToXml(*input, *output, runeArray[0], *root); err != nil {
 				fmt.Printf("Error converting CSV to XML: %v", err)
 				os.Exit(1)
 			}

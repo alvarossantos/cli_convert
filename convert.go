@@ -8,37 +8,32 @@ import (
 	"io"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 )
 
-type XmlGeneric struct {
-	XmlName xml.Name
-	Content []interface{} `xml:"any"`
+type XmlElement struct {
+	XMLName  xml.Name
+	Attrs    []xml.Attr   `xml:",any,attr"`
+	Children []XmlElement `xml:",any"`
+	Value    string       `xml:",chardata"`
 }
 
-func convertToXmlElement(data interface{}, tagName string) XmlGeneric {
-	elem := XmlGeneric{XmlName: xml.Name{Local: tagName}}
+func convertToXmlElement(data interface{}, tagName string) XmlElement {
+	elem := XmlElement{XMLName: xml.Name{Local: tagName}}
+
 	switch v := data.(type) {
 	case map[string]interface{}:
-		keys := make([]string, 0, len(v))
-		for key := range v {
-			keys = append(keys, key)
-		}
-
-		sort.Strings(keys)
-
-		for _, key := range keys {
-			val := v[key]
-			elem.Content = append(elem.Content, convertToXmlElement(val, key))
+		for key, val := range v {
+			child := convertToXmlElement(val, key)
+			elem.Children = append(elem.Children, child)
 		}
 	case []interface{}:
 		for _, item := range v {
-			elem.Content = append(elem.Content, convertToXmlElement(item, tagName))
+			elem.Children = append(elem.Children, convertToXmlElement(item, tagName))
 		}
-	case nil:
-
 	default:
-		elem.Content = append(elem.Content, fmt.Sprintf("%v", v))
+		elem.Value = fmt.Sprintf("%v", v)
 	}
 	return elem
 }
@@ -123,6 +118,119 @@ func writeDataAsCSV(writer *csv.Writer, data interface{}) error {
 	return nil
 }
 
+func getJsonValue(s string) interface{} {
+	if f, err := strconv.ParseFloat(s, 64); err == nil {
+		return f
+	}
+
+	if b, err := strconv.ParseBool(s); err == nil {
+		return b
+	}
+
+	return s
+}
+
+func writeJsonChildren(children []XmlElement, builder *strings.Builder, indentLevel int) {
+	indent := strings.Repeat("  ", indentLevel)
+	newLine := "\n"
+	space := " "
+
+	childrenGrouped := make(map[string][]XmlElement)
+	var orderedKeys []string
+
+	for _, child := range children {
+		key := child.XMLName.Local
+		if _, exists := childrenGrouped[key]; !exists {
+			orderedKeys = append(orderedKeys, key)
+		}
+		childrenGrouped[key] = append(childrenGrouped[key], child)
+	}
+
+	builder.WriteString("{" + newLine)
+	for i, key := range orderedKeys {
+		childrenForKey := childrenGrouped[key]
+
+		builder.WriteString(indent + "  ")
+		builder.WriteString(fmt.Sprintf("%q:%s", key, space))
+
+		if len(childrenForKey) == 1 {
+			child := childrenForKey[0]
+
+			if len(child.Children) == 0 {
+				jsonValue, _ := json.Marshal(getJsonValue(child.Value))
+				builder.Write(jsonValue)
+			} else {
+				writeJsonChildren(child.Children, builder, indentLevel+1)
+			}
+		} else {
+			builder.WriteString("[" + newLine)
+			for j, item := range childrenForKey {
+				builder.WriteString(indent + "    ")
+				if len(item.Children) == 0 {
+					jsonValue, _ := json.Marshal(getJsonValue(item.Value))
+					builder.Write(jsonValue)
+				} else {
+					writeJsonChildren(item.Children, builder, indentLevel+2)
+				}
+
+				if j < len(childrenForKey)-1 {
+					builder.WriteString("," + newLine)
+				} else {
+					builder.WriteString(newLine)
+				}
+			}
+			builder.WriteString(indent + "  " + "]")
+		}
+
+		if i < len(orderedKeys)-1 {
+			builder.WriteString("," + newLine)
+		} else {
+			builder.WriteString(newLine)
+		}
+	}
+	builder.WriteString(indent + "}")
+}
+
+func processXmlElement(elem XmlElement) interface{} {
+	if len(elem.Children) == 0 {
+		return getJsonValue(elem.Value)
+	}
+
+	childrenGrouped := make(map[string][]XmlElement)
+	var orderedKeys []string
+
+	for _, child := range elem.Children {
+		key := child.XMLName.Local
+		if _, exists := childrenGrouped[key]; !exists {
+			orderedKeys = append(orderedKeys, key)
+		}
+		childrenGrouped[key] = append(childrenGrouped[key], child)
+	}
+	if len(orderedKeys) == 1 {
+		childrenList := childrenGrouped[orderedKeys[0]]
+		if len(childrenList) > 1 {
+			var list []interface{}
+			for _, item := range childrenList {
+				list = append(list, processXmlElement(item))
+			}
+			return list
+		}
+	}
+	obj := make(map[string]interface{})
+	for key, childrenForKey := range childrenGrouped {
+		if len(childrenForKey) == 1 {
+			obj[key] = processXmlElement(childrenForKey[0])
+		} else {
+			var list []interface{}
+			for _, item := range childrenForKey {
+				list = append(list, processXmlElement(item))
+			}
+			obj[key] = list
+		}
+	}
+	return obj
+}
+
 func convertJsonToCsv(inputFile, outputFile string, delimiter rune) error {
 	inputData, err := os.ReadFile(inputFile)
 	if err != nil {
@@ -154,7 +262,7 @@ func convertJsonToCsv(inputFile, outputFile string, delimiter rune) error {
 	return nil
 }
 
-func convertJsonToXml(inputFile, outputFile string) error {
+func convertJsonToXml(inputFile, outputFile string, rootName string) error {
 	inputData, err := os.ReadFile(inputFile)
 	if err != nil {
 		return fmt.Errorf("failed to read input file: %v", err)
@@ -165,8 +273,8 @@ func convertJsonToXml(inputFile, outputFile string) error {
 		return fmt.Errorf("failed to parse JSON: %v", err)
 	}
 
-	xmlRoot := convertToXmlElement(data, "root")
-	output, err := xml.MarshalIndent(xmlRoot, "", " ")
+	xmlRoot := convertToXmlElement(data, rootName)
+	output, err := xml.MarshalIndent(xmlRoot, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to create output file: %v", err)
 	}
@@ -198,7 +306,13 @@ func convertCsvToJson(inputFile, outputFile string, delimiter rune) error {
 	for _, record := range records[1:] {
 		row := make(map[string]interface{})
 		for j, value := range record {
-			row[header[j]] = strings.TrimSpace(value)
+
+			cleanValue := strings.TrimSpace(value)
+			if num, err := strconv.ParseFloat(cleanValue, 64); err == nil {
+				row[header[j]] = num
+			} else {
+				row[header[j]] = cleanValue
+			}
 		}
 		rows = append(rows, row)
 	}
@@ -215,7 +329,7 @@ func convertCsvToJson(inputFile, outputFile string, delimiter rune) error {
 	return nil
 }
 
-func convertCsvToXml(inputFile, outputFile string, delimiter rune) error {
+func convertCsvToXml(inputFile, outputFile string, delimiter rune, rootName string) error {
 	file, err := os.Open(inputFile)
 	if err != nil {
 		return fmt.Errorf("failed to read input file: %v", err)
@@ -235,12 +349,22 @@ func convertCsvToXml(inputFile, outputFile string, delimiter rune) error {
 	for _, record := range records[1:] {
 		row := make(map[string]interface{})
 		for j, value := range record {
-			row[header[j]] = strings.TrimSpace(value)
+
+			cleanValue := strings.TrimSpace(value)
+			if num, err := strconv.ParseFloat(cleanValue, 64); err == nil {
+				row[header[j]] = num
+			} else {
+				row[header[j]] = cleanValue
+			}
 		}
 		rows = append(rows, row)
 	}
 
-	xmlRoot := convertToXmlElement(rows, "rows")
+	xmlRoot := XmlElement{XMLName: xml.Name{Local: rootName}}
+	for _, rowMap := range rows {
+		rowElem := convertToXmlElement(rowMap, "row")
+		xmlRoot.Children = append(xmlRoot.Children, rowElem)
+	}
 	output, err := xml.MarshalIndent(xmlRoot, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal XML: %v", err)
@@ -253,43 +377,6 @@ func convertCsvToXml(inputFile, outputFile string, delimiter rune) error {
 	return nil
 }
 
-func convertToMap(xmlElem XmlGeneric) map[string]interface{} {
-	result := make(map[string]interface{})
-
-	if len(xmlElem.Content) == 1 {
-		if str, ok := xmlElem.Content[0].(string); ok {
-			result[xmlElem.XmlName.Local] = str
-			return result
-		}
-	}
-
-	contentMap := make(map[string]interface{})
-	for _, elem := range xmlElem.Content {
-		switch v := elem.(type) {
-		case XmlGeneric:
-			recursiveMap := convertToMap(v)
-			for key, value := range recursiveMap {
-				if _, exists := contentMap[key]; !exists {
-					contentMap[key] = value
-
-				} else {
-					oldValue := contentMap[key]
-					switch x := oldValue.(type) {
-					case []interface{}:
-						x = append(x, value)
-						contentMap[key] = x
-
-					default:
-						contentMap[key] = []interface{}{oldValue, value}
-					}
-				}
-			}
-		}
-	}
-	result[xmlElem.XmlName.Local] = contentMap
-	return result
-}
-
 func convertXmlToJson(inputFile, outputFile string) error {
 	file, err := os.Open(inputFile)
 	if err != nil {
@@ -297,8 +384,8 @@ func convertXmlToJson(inputFile, outputFile string) error {
 	}
 	defer file.Close()
 
-	var stack []XmlGeneric
-	var rootElement XmlGeneric
+	var stack []*XmlElement
+	var rootElement *XmlElement
 	decoder := xml.NewDecoder(file)
 	for {
 		token, err := decoder.Token()
@@ -311,46 +398,44 @@ func convertXmlToJson(inputFile, outputFile string) error {
 
 		switch t := token.(type) {
 		case xml.StartElement:
-			newElement := XmlGeneric{XmlName: t.Name}
-			stack = append(stack, newElement)
-
+			newElement := XmlElement{XMLName: t.Name}
+			stack = append(stack, &newElement)
 		case xml.EndElement:
 			if len(stack) == 0 {
 				return fmt.Errorf("unexpected end element %s", t.Name.Local)
 			}
 			current := stack[len(stack)-1]
-			if current.XmlName.Local != t.Name.Local {
-				return fmt.Errorf("mismatched tags: expected %s, got %s", current.XmlName.Local, t.Name.Local)
+			if current.XMLName.Local != t.Name.Local {
+				return fmt.Errorf("mismatched tags: expected %s, got %s", current.XMLName.Local, t.Name.Local)
 			}
 			stack = stack[:len(stack)-1]
+
 			if len(stack) == 0 {
 				rootElement = current
 			} else {
-				parent := &stack[len(stack)-1]
-				parent.Content = append(parent.Content, current)
+				parent := stack[len(stack)-1]
+				parent.Children = append(parent.Children, *current)
 			}
-
 		case xml.CharData:
 			text := strings.TrimSpace(string(t))
 			if text != "" && len(stack) > 0 {
-				current := &stack[len(stack)-1]
-				current.Content = append(current.Content, text)
+				current := stack[len(stack)-1]
+				current.Value = text
 			}
 		}
 	}
-	if len(stack) != 0 {
-		return fmt.Errorf("invalid XML structure")
+	if rootElement == nil {
+		return fmt.Errorf("invalid or empty XML structure")
 	}
 
-	rootMap := convertToMap(rootElement)
+	var builder strings.Builder
+	builder.WriteString("{\n")
+	builder.WriteString(fmt.Sprintf("  %q: ", rootElement.XMLName.Local))
+	writeJsonChildren(rootElement.Children, &builder, 1)
+	builder.WriteString("\n}")
 
-	output, err := json.MarshalIndent(rootMap, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal JSON: %v", err)
-	}
-
-	if err := os.WriteFile(outputFile, output, 0644); err != nil {
-		return fmt.Errorf("failed to write XML output file: %v", err)
+	if err := os.WriteFile(outputFile, []byte(builder.String()), 0644); err != nil {
+		return fmt.Errorf("failed to write JSON output file: %v", err)
 	}
 
 	return nil
@@ -363,8 +448,8 @@ func convertXmlToCsv(inputFile, outputFile string, delimiter rune) error {
 	}
 	defer file.Close()
 
-	var stack []XmlGeneric
-	var rootElement XmlGeneric
+	var stack []*XmlElement
+	var rootElement *XmlElement
 	decoder := xml.NewDecoder(file)
 	for {
 		token, err := decoder.Token()
@@ -377,30 +462,30 @@ func convertXmlToCsv(inputFile, outputFile string, delimiter rune) error {
 
 		switch t := token.(type) {
 		case xml.StartElement:
-			newElement := XmlGeneric{XmlName: t.Name}
-			stack = append(stack, newElement)
+			newElement := XmlElement{XMLName: t.Name}
+			stack = append(stack, &newElement)
 
 		case xml.EndElement:
 			if len(stack) == 0 {
 				return fmt.Errorf("unexpected end element %s", t.Name.Local)
 			}
 			current := stack[len(stack)-1]
-			if current.XmlName.Local != t.Name.Local {
-				return fmt.Errorf("mismatched tags: expected %s, got %s", current.XmlName.Local, t.Name.Local)
+			if current.XMLName.Local != t.Name.Local {
+				return fmt.Errorf("mismatched tags: expected %s, got %s", current.XMLName.Local, t.Name.Local)
 			}
 			stack = stack[:len(stack)-1]
 			if len(stack) == 0 {
 				rootElement = current
 			} else {
-				parent := &stack[len(stack)-1]
-				parent.Content = append(parent.Content, current)
+				parent := stack[len(stack)-1]
+				parent.Children = append(parent.Children, *current)
 			}
 
 		case xml.CharData:
 			text := strings.TrimSpace(string(t))
 			if text != "" && len(stack) > 0 {
-				current := &stack[len(stack)-1]
-				current.Content = append(current.Content, text)
+				current := stack[len(stack)-1]
+				current.Value = text
 			}
 		}
 	}
@@ -408,22 +493,29 @@ func convertXmlToCsv(inputFile, outputFile string, delimiter rune) error {
 		return fmt.Errorf("invalid XML structure")
 	}
 
-	rootMap := convertToMap(rootElement)
-
-	csvData := interface{}(rootMap)
-	for {
-		currentMap, ok := csvData.(map[string]interface{})
-		if !ok {
-			break
+	var records []interface{}
+	if rootElement == nil {
+		return fmt.Errorf("invalid or empty XML structure")
+	}
+	allSameTag := true
+	if len(rootElement.Children) > 1 {
+		firstTag := rootElement.Children[0].XMLName.Local
+		for _, child := range rootElement.Children[1:] {
+			if child.XMLName.Local != firstTag {
+				allSameTag = false
+				break
+			}
 		}
+	} else {
+		allSameTag = false
+	}
 
-		if len(currentMap) != 1 {
-			break
+	if allSameTag {
+		for _, rowElem := range rootElement.Children {
+			records = append(records, processXmlElement(rowElem))
 		}
-
-		for _, value := range currentMap {
-			csvData = value
-		}
+	} else {
+		records = append(records, processXmlElement(*rootElement))
 	}
 
 	output, err := os.Create(outputFile)
@@ -435,7 +527,7 @@ func convertXmlToCsv(inputFile, outputFile string, delimiter rune) error {
 	writer := csv.NewWriter(output)
 	writer.Comma = delimiter
 
-	if err := writeDataAsCSV(writer, csvData); err != nil {
+	if err := writeDataAsCSV(writer, records); err != nil {
 		return err
 	}
 

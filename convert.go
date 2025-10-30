@@ -274,12 +274,16 @@ func convertJsonToXml(inputFile, outputFile string, rootName string) error {
 	}
 
 	xmlRoot := convertToXmlElement(data, rootName)
-	output, err := xml.MarshalIndent(xmlRoot, "", "  ")
+
+	xmlData, err := xml.MarshalIndent(xmlRoot, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to create output file: %v", err)
 	}
 
-	if err := os.WriteFile(outputFile, output, 0644); err != nil {
+	xmlHeader := []byte(`<?xml version="1.0" encoding="UTF-8"?>` + "\n")
+	finalOutput := append(xmlHeader, xmlData...)
+
+	if err := os.WriteFile(outputFile, finalOutput, 0644); err != nil {
 		return fmt.Errorf("failed to write output file: %v", err)
 	}
 
@@ -365,12 +369,16 @@ func convertCsvToXml(inputFile, outputFile string, delimiter rune, rootName stri
 		rowElem := convertToXmlElement(rowMap, "row")
 		xmlRoot.Children = append(xmlRoot.Children, rowElem)
 	}
-	output, err := xml.MarshalIndent(xmlRoot, "", "  ")
+
+	xmlData, err := xml.MarshalIndent(xmlRoot, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal XML: %v", err)
 	}
 
-	if err := os.WriteFile(outputFile, output, 0644); err != nil {
+	xmlHeader := []byte(`<?xml version="1.0" encoding="UTF-8"?>` + "\n")
+	finalOutput := append(xmlHeader, xmlData...)
+
+	if err := os.WriteFile(outputFile, finalOutput, 0644); err != nil {
 		return fmt.Errorf("failed to write XML output file: %v", err)
 	}
 

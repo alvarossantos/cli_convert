@@ -14,8 +14,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	if os.Args[1] == "--help" || os.Args[1] == "-h" {
+		setGlobalUsage()
+		os.Exit(0)
+	}
+
 	if os.Args[1] == "convert" {
-	
+
 		convertCmd := flag.NewFlagSet("convert", flag.ExitOnError)
 
 		input := convertCmd.String("input", "", "entrada")
@@ -30,7 +35,7 @@ func main() {
 
 		if len(os.Args) > 2 {
 			for _, arg := range os.Args[2:] {
-				if arg == "-help"|| arg == "--help" || arg == "-h" {
+				if arg == "--help" || arg == "-h" {
 					convertCmd.Usage()
 					os.Exit(0)
 				}

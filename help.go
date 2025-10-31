@@ -11,7 +11,6 @@ const (
 	ColorBold   = "\033[1m"
 	ColorCyan   = "\033[36m"
 	ColorYellow = "\033[33m"
-	ColorGreen  = "\033[32m"
 	ColorBlue   = "\033[34m"
 	ColorGray   = "\033[90m"
 )
@@ -25,8 +24,8 @@ func setGlobalUsage() {
 	fmt.Println()
 
 	fmt.Printf("%sAVAILABLE COMMANDS%s\n", ColorCyan, ColorReset)
-	fmt.Printf("  %sconvert%s   Convert a file between supported formats\n", ColorGreen, ColorReset)
-	fmt.Printf("  %shelp%s      Show general or command-specific help\n", ColorGreen, ColorReset)
+	fmt.Printf("  %sconvert%s   Convert a file between supported formats\n", ColorYellow, ColorReset)
+	fmt.Printf("  %shelp%s      Show general or command-specific help\n", ColorYellow, ColorReset)
 	fmt.Println()
 
 	fmt.Printf("%sEXAMPLES%s\n", ColorCyan, ColorReset)
@@ -50,6 +49,12 @@ func setConvertUsage(flagSet *flag.FlagSet) {
 		fmt.Printf("%sDESCRIPTION%s\n", ColorCyan, ColorReset)
 		fmt.Println("  Converts files between JSON, CSV, and XML formats, with optional customization")
 		fmt.Println("  for CSV delimiters and XML root elements.")
+		fmt.Println()
+
+		fmt.Printf("%sSUPPORTED FORMATS%s\n", ColorCyan, ColorReset)
+		fmt.Printf("  %s• json%s\n", ColorBlue, ColorReset)
+		fmt.Printf("  %s• csv%s\n", ColorBlue, ColorReset)
+		fmt.Printf("  %s• xml%s\n", ColorBlue, ColorReset)
 		fmt.Println()
 
 		fmt.Printf("%sREQUIRED FLAGS%s\n", ColorCyan, ColorReset)

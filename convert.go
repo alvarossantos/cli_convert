@@ -6,7 +6,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -25,8 +25,16 @@ func convertToXmlElement(data interface{}, tagName string) XmlElement {
 	switch v := data.(type) {
 	case map[string]interface{}:
 		for key, val := range v {
-			child := convertToXmlElement(val, key)
-			elem.Children = append(elem.Children, child)
+			if array, ok := val.([]interface{}); ok {
+				for _, item := range array {
+					child := convertToXmlElement(item, key)
+					elem.Children = append(elem.Children, child)
+				}
+			} else {
+				child := convertToXmlElement(val, key)
+				elem.Children = append(elem.Children, child)
+			}
+
 		}
 	case []interface{}:
 		for _, item := range v {
@@ -231,8 +239,8 @@ func processXmlElement(elem XmlElement) interface{} {
 	return obj
 }
 
-func convertJsonToCsv(inputFile, outputFile string, delimiter rune) error {
-	inputData, err := os.ReadFile(inputFile)
+func convertJsonToCsv(input io.Reader, output io.Writer, delimiter rune) error {
+	inputData, err := io.ReadAll(input)
 	if err != nil {
 		return fmt.Errorf("failed to read input file: %v", err)
 	}
@@ -241,12 +249,6 @@ func convertJsonToCsv(inputFile, outputFile string, delimiter rune) error {
 	if err := json.Unmarshal(inputData, &data); err != nil {
 		return fmt.Errorf("failed to parse JSON: %v", err)
 	}
-
-	output, err := os.Create(outputFile)
-	if err != nil {
-		return fmt.Errorf("failed to create output file: %v", err)
-	}
-	defer output.Close()
 
 	writer := csv.NewWriter(output)
 	writer.Comma = delimiter
@@ -262,8 +264,8 @@ func convertJsonToCsv(inputFile, outputFile string, delimiter rune) error {
 	return nil
 }
 
-func convertJsonToXml(inputFile, outputFile string, rootName string) error {
-	inputData, err := os.ReadFile(inputFile)
+func convertJsonToXml(input io.Reader, output io.Writer, rootName string) error {
+	inputData, err := io.ReadAll(input)
 	if err != nil {
 		return fmt.Errorf("failed to read input file: %v", err)
 	}
@@ -281,27 +283,48 @@ func convertJsonToXml(inputFile, outputFile string, rootName string) error {
 	}
 
 	xmlHeader := []byte(`<?xml version="1.0" encoding="UTF-8"?>` + "\n")
-	finalOutput := append(xmlHeader, xmlData...)
 
-	if err := os.WriteFile(outputFile, finalOutput, 0644); err != nil {
+	if _, err := output.Write(append(xmlHeader, xmlData...)); err != nil {
 		return fmt.Errorf("failed to write output file: %v", err)
 	}
 
 	return nil
 }
 
-func convertCsvToJson(inputFile, outputFile string, delimiter rune) error {
-	file, err := os.Open(inputFile)
+func parseValue(s string) interface{} {
+	if s == "" {
+		return nil
+	}
+	if s == "true" {
+		return true
+	}
+	if s == "false" {
+		return false
+	}
+	if i, err := strconv.Atoi(s); err == nil {
+		return i
+	}
+	if f, err := strconv.ParseFloat(s, 64); err == nil {
+		return f
+	}
+	return s
+}
+
+func convertCsvToJson(input io.Reader, output io.Writer, delimiter rune) error {
+	file, err := io.ReadAll(input)
 	if err != nil {
 		return fmt.Errorf("failed to read input file: %v", err)
 	}
-	defer file.Close()
 
-	reader := csv.NewReader(file)
+	reader := csv.NewReader(strings.NewReader(string(file)))
 	reader.Comma = delimiter
 	records, err := reader.ReadAll()
 	if err != nil {
 		return fmt.Errorf("failed to parse CSV: %v", err)
+	}
+
+	if len(records) == 0 {
+		return fmt.Errorf("empty CSV file")
 	}
 
 	header := records[0]
@@ -310,41 +333,32 @@ func convertCsvToJson(inputFile, outputFile string, delimiter rune) error {
 	for _, record := range records[1:] {
 		row := make(map[string]interface{})
 		for j, value := range record {
-
 			cleanValue := strings.TrimSpace(value)
-			if num, err := strconv.ParseFloat(cleanValue, 64); err == nil {
-				row[header[j]] = num
-			} else {
-				row[header[j]] = cleanValue
-			}
+			row[header[j]] = parseValue(cleanValue)
 		}
 		rows = append(rows, row)
 	}
 
-	output, err := json.MarshalIndent(rows, "", "  ")
+	jsonBytes, err := json.MarshalIndent(rows, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %v", err)
 	}
 
-	if err := os.WriteFile(outputFile, output, 0644); err != nil {
-		return fmt.Errorf("failed to write JSON output file: %v", err)
-	}
-
-	return nil
+	_, err = output.Write(jsonBytes)
+	return err
 }
 
-func convertCsvToXml(inputFile, outputFile string, delimiter rune, rootName string) error {
-	file, err := os.Open(inputFile)
-	if err != nil {
-		return fmt.Errorf("failed to read input file: %v", err)
-	}
-	defer file.Close()
-
-	reader := csv.NewReader(file)
+func convertCsvToXml(input io.Reader, output io.Writer, delimiter rune, rootName string) error {
+	reader := csv.NewReader(input)
 	reader.Comma = delimiter
+
 	records, err := reader.ReadAll()
 	if err != nil {
 		return fmt.Errorf("failed to parse CSV: %v", err)
+	}
+
+	if len(records) < 1 {
+		return fmt.Errorf("empty CSV file")
 	}
 
 	header := records[0]
@@ -376,25 +390,20 @@ func convertCsvToXml(inputFile, outputFile string, delimiter rune, rootName stri
 	}
 
 	xmlHeader := []byte(`<?xml version="1.0" encoding="UTF-8"?>` + "\n")
-	finalOutput := append(xmlHeader, xmlData...)
 
-	if err := os.WriteFile(outputFile, finalOutput, 0644); err != nil {
+	if _, err := output.Write(append(xmlHeader, xmlData...)); err != nil {
 		return fmt.Errorf("failed to write XML output file: %v", err)
 	}
 
 	return nil
 }
 
-func convertXmlToJson(inputFile, outputFile string) error {
-	file, err := os.Open(inputFile)
-	if err != nil {
-		return fmt.Errorf("failed to read input file: %v", err)
-	}
-	defer file.Close()
+func convertXmlToJson(input io.Reader, output io.Writer) error {
 
+	decoder := xml.NewDecoder(input)
 	var stack []*XmlElement
 	var rootElement *XmlElement
-	decoder := xml.NewDecoder(file)
+
 	for {
 		token, err := decoder.Token()
 		if err != nil {
@@ -432,6 +441,7 @@ func convertXmlToJson(inputFile, outputFile string) error {
 			}
 		}
 	}
+
 	if rootElement == nil {
 		return fmt.Errorf("invalid or empty XML structure")
 	}
@@ -442,23 +452,19 @@ func convertXmlToJson(inputFile, outputFile string) error {
 	writeJsonChildren(rootElement.Children, &builder, 1)
 	builder.WriteString("\n}")
 
-	if err := os.WriteFile(outputFile, []byte(builder.String()), 0644); err != nil {
+	if _, err := output.Write([]byte(builder.String())); err != nil {
 		return fmt.Errorf("failed to write JSON output file: %v", err)
 	}
 
 	return nil
 }
 
-func convertXmlToCsv(inputFile, outputFile string, delimiter rune) error {
-	file, err := os.Open(inputFile)
-	if err != nil {
-		return fmt.Errorf("failed to read input file: %v", err)
-	}
-	defer file.Close()
+func convertXmlToCsv(input io.Reader, output io.Writer, delimiter rune) error {
 
+	decoder := xml.NewDecoder(input)
 	var stack []*XmlElement
 	var rootElement *XmlElement
-	decoder := xml.NewDecoder(file)
+
 	for {
 		token, err := decoder.Token()
 		if err != nil {
@@ -497,6 +503,7 @@ func convertXmlToCsv(inputFile, outputFile string, delimiter rune) error {
 			}
 		}
 	}
+
 	if len(stack) != 0 {
 		return fmt.Errorf("invalid XML structure")
 	}
@@ -526,12 +533,6 @@ func convertXmlToCsv(inputFile, outputFile string, delimiter rune) error {
 		records = append(records, processXmlElement(*rootElement))
 	}
 
-	output, err := os.Create(outputFile)
-	if err != nil {
-		return fmt.Errorf("failed to create output file: %v", err)
-	}
-	defer output.Close()
-
 	writer := csv.NewWriter(output)
 	writer.Comma = delimiter
 
@@ -545,4 +546,16 @@ func convertXmlToCsv(inputFile, outputFile string, delimiter rune) error {
 	}
 
 	return nil
+}
+
+func ensureOutputExtension(filename, desiredExt string) string {
+	filename = strings.TrimSpace(filename)
+	desiredExt = strings.ToLower(strings.TrimPrefix(desiredExt, "."))
+
+	ext := strings.ToLower(strings.TrimPrefix(filepath.Ext(filename), "."))
+	if ext != desiredExt {
+		filename = strings.TrimSuffix(filename, filepath.Ext(filename))
+		filename += "." + desiredExt
+	}
+	return filename
 }

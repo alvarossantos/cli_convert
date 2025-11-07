@@ -2,3 +2,4 @@ cli-convert
 *.json
 *.csv
 *.xml
+*.yaml

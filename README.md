@@ -1,6 +1,6 @@
 # CLI Convert – Universal File Converter
 
-**CLI Convert** is a powerful and flexible command-line interface (CLI) tool built with **Go (Golang)**, designed to streamline the conversion of data files between various formats. It currently supports seamless transformations between **JSON, CSV, and XML**, with a focus on performance and ease of use.
+**CLI Convert** is a powerful and flexible command-line interface (CLI) tool built with **Go (Golang)**, designed to streamline the conversion of data files between various formats. It currently supports seamless transformations between **JSON, CSV, XML, and YAML**, with a focus on performance and ease of use.
 
 This tool is ideal for developers, data engineers, and anyone who frequently works with different data formats and needs a quick, reliable way to convert them.
 
@@ -8,10 +8,13 @@ This tool is ideal for developers, data engineers, and anyone who frequently wor
 
 ## ✨ Features
 
-* **Bidirectional Conversion:** Convert between JSON, CSV, and XML formats.
+* **Bidirectional Conversion:** Convert between JSON, CSV, XML, and YAML formats.
   * `JSON <-> CSV`
   * `JSON <-> XML`
+  * `JSON <-> YAML`
   * `CSV <-> XML`
+  * `CSV <-> YAML`
+  * `XML <-> YAML`
 * **Robust File Validation:** Ensures input files exist, are not empty, and adhere to their specified format before conversion.
 * **Intuitive Command-Line Interface:** Easy-to-use flags for specifying input/output, source/target formats, and conversion-specific options.
 * **Go-powered Performance:** Leverages Go's concurrency and efficiency for fast data processing.
@@ -58,17 +61,17 @@ cli-convert convert --from <source_format> --to <target_format> --input <input_f
 * `--output <file_path>` (Required)
 
   * Specifies the path where the converted file will be saved.
-  * The tool will automatically append the correct file extension (`.json`, `.csv`, `.xml`) if not provided.
+  * The tool will automatically append the correct file extension (`.json`, `.csv`, `.xml`,`.yaml`) if not provided.
   * Example: `--output converted_data.csv`
 * `--from <format>` (Required)
 
   * Defines the format of the input file.
-  * Accepted values: `json`, `csv`, `xml`
-  * Example: `--from json`
+  * Accepted values: `json`, `csv`, `xml`,`.yaml`
+  * Example: `--from yaml`
 * `--to <format>` (Required)
 
   * Defines the desired format for the output file.
-  * Accepted values: `json`, `csv`, `xml`
+  * Accepted values: `json`, `csv`, `xml`, `yaml`
   * Example: `--to csv`
 * `--delimiter <char>` (Optional)
 
@@ -128,6 +131,19 @@ cli-convert convert --from xml --to json --input input.xml --output output.json
 ```bash
 cli-convert convert --from xml --to csv --input input.xml --output output.csv
 cli-convert convert --from xml --to csv --input input.xml --output output.csv --delimiter '|'
+```
+
+#### ➡️ YAML Conversions
+
+```bash
+# YAML to JSON
+cli-convert convert --from yaml --to json --input input.yaml --output output.json
+
+# YAML to CSV
+cli-convert convert --from yaml --to csv --input input.yaml --output output.csv --delimiter ','
+
+# YAML to XML
+cli-convert convert --from yaml --to xml --input input.yaml --output output.xml --root YamlData
 ```
 
 ---

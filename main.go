@@ -79,6 +79,8 @@ func main() {
 			*output = ensureOutputExtension(*output, "csv")
 		case "xml":
 			*output = ensureOutputExtension(*output, "xml")
+		case "yaml":
+			*output = ensureOutputExtension(*output, "yaml")
 		default:
 			fmt.Printf("Unsupported format: %s\n", *to)
 			os.Exit(1)
@@ -133,6 +135,16 @@ func main() {
 				fmt.Println("Conversion from JSON to XML completed sucessfully.")
 				os.Exit(0)
 
+			case "yaml":
+
+				if err := convertJsonToYaml(fileIn, fileOut); err != nil {
+					fmt.Printf("Error converting JSON to YAML: %v", err)
+					os.Exit(1)
+				}
+
+				fmt.Println("Conversion from JSON to YAML completed sucessfully.")
+				os.Exit(0)
+
 			default:
 				fmt.Printf("Unssuported conversion from JSON to %s", *to)
 				os.Exit(1)
@@ -163,6 +175,16 @@ func main() {
 				}
 
 				fmt.Println("Conversion from CSV to XML completed sucessfully.")
+				os.Exit(0)
+
+			case "yaml":
+
+				if err := convertCsvToYaml(fileIn, fileOut, runeArray[0]); err != nil {
+					fmt.Printf("Error converting CSV to YAML: %v", err)
+					os.Exit(1)
+				}
+
+				fmt.Println("Conversion from CSV to YAML completed sucessfully.")
 				os.Exit(0)
 
 			default:
@@ -197,11 +219,55 @@ func main() {
 				fmt.Println("Conversion from XML to CSV completed sucessfully.")
 				os.Exit(0)
 
+			case "yaml":
+
+				if err := convertXmlToYaml(fileIn, fileOut); err != nil {
+					fmt.Printf("Error converting XML to YAML: %v", err)
+					os.Exit(1)
+				}
+
+				fmt.Println("Conversion from XML to YAML completed sucessfully.")
+				os.Exit(0)
+
 			default:
 				fmt.Printf("Unsuported conversion from XML to %s", *to)
 				os.Exit(1)
 			}
 
+		case "yaml":
+			if err := validateFileYaml(*input); err != nil {
+				fmt.Printf("Error validating YAML: %v\n", err)
+				os.Exit(1)
+			}
+
+			switch *to {
+			case "json":
+				if err := convertYamlToJson(fileIn, fileOut); err != nil {
+					fmt.Printf("Error converting YAML to JSON: %v", err)
+					os.Exit(1)
+				}
+
+				fmt.Println("Conversion from YAML to JSON completed sucessfully.")
+				os.Exit(0)
+
+			case "csv":
+				if err := convertYamlToCsv(fileIn, fileOut, runeArray[0]); err != nil {
+					fmt.Printf("Error converting YAML to CSV: %v", err)
+					os.Exit(1)
+				}
+
+				fmt.Println("Conversion from YAML to CSV completed sucessfully.")
+				os.Exit(0)
+
+			case "xml":
+				if err := convertYamlToXml(fileIn, fileOut, *root); err != nil {
+					fmt.Printf("Error converting YAML to XML: %v", err)
+					os.Exit(1)
+				}
+
+				fmt.Println("Conversion from YAML to XML completed sucessfully.")
+				os.Exit(0)
+			}
 		default:
 			fmt.Printf("Unsupported format: %s\n", *from)
 			os.Exit(1)

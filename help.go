@@ -16,7 +16,7 @@ const (
 )
 
 func setGlobalUsage() {
-	fmt.Printf("%scli-convert%s — A universal file format converter for JSON, XML, and CSV.\n", ColorBold, ColorReset)
+	fmt.Printf("%scli-convert%s — A universal file format converter for JSON, CSV, XML, and YAML.\n", ColorBold, ColorReset)
 	fmt.Println()
 
 	fmt.Printf("%sUSAGE%s\n", ColorCyan, ColorReset)
@@ -47,7 +47,7 @@ func setConvertUsage(flagSet *flag.FlagSet) {
 		fmt.Println()
 
 		fmt.Printf("%sDESCRIPTION%s\n", ColorCyan, ColorReset)
-		fmt.Println("  Converts files between JSON, CSV, and XML formats, with optional customization")
+		fmt.Println("  Converts files between JSON, CSV, XML, and YAML formats, with optional customization")
 		fmt.Println("  for CSV delimiters and XML root elements.")
 		fmt.Println()
 
@@ -55,11 +55,12 @@ func setConvertUsage(flagSet *flag.FlagSet) {
 		fmt.Printf("  %s• json%s\n", ColorBlue, ColorReset)
 		fmt.Printf("  %s• csv%s\n", ColorBlue, ColorReset)
 		fmt.Printf("  %s• xml%s\n", ColorBlue, ColorReset)
+		fmt.Printf("  %s• yaml%s\n", ColorBlue, ColorReset)
 		fmt.Println()
 
 		fmt.Printf("%sREQUIRED FLAGS%s\n", ColorCyan, ColorReset)
-		fmt.Printf("  %s--from%s <string>       Source format of the input file (options: json, csv, xml)\n", ColorYellow, ColorReset)
-		fmt.Printf("  %s--to%s <string>         Target format of the output file (options: json, csv, xml)\n", ColorYellow, ColorReset)
+		fmt.Printf("  %s--from%s <string>       Source format of the input file (options: json, csv, xml, yaml)\n", ColorYellow, ColorReset)
+		fmt.Printf("  %s--to%s <string>         Target format of the output file (options: json, csv, xml, yaml)\n", ColorYellow, ColorReset)
 		fmt.Printf("  %s--input%s <string>      Path to the input file to be converted\n", ColorYellow, ColorReset)
 		fmt.Printf("  %s--output%s <string>     Path where the converted output file will be saved\n", ColorYellow, ColorReset)
 		fmt.Println()
@@ -83,6 +84,9 @@ func setConvertUsage(flagSet *flag.FlagSet) {
 		fmt.Println()
 		fmt.Printf("  %s# Convert XML to JSON%s\n", ColorGray, ColorReset)
 		fmt.Println("  cli-convert convert --from xml --to json --input config.xml --output config.json")
+		fmt.Println()
+		fmt.Printf("  %s# Convert YAML to JSON%s\n", ColorGray, ColorReset)
+		fmt.Println("  cli-convert convert --from yaml --to json --input data.yaml --output data.json")
 		fmt.Println()
 	}
 }

@@ -93,7 +93,9 @@ Here are some common conversion scenarios:
 #### ➡️ JSON to CSV
 
 ```bash
-cli-convert convert --from json --to csv --input input.json --output output.csv# Using a custom delimiter
+cli-convert convert --from json --to csv --input input.json --output output.csv
+
+# Using a custom delimiter
 cli-convert convert --from json --to csv --input input.json --output output.csv --delimiter ';'
 
 #### ➡️ JSON to XML
@@ -144,6 +146,9 @@ cli-convert convert --from yaml --to csv --input input.yaml --output output.csv 
 
 # YAML to XML
 cli-convert convert --from yaml --to xml --input input.yaml --output output.xml --root YamlData
+
+# JSON to YAML
+cli-convert convert --from json --to yaml --input input.json --output output.yaml
 ```
 
 ---

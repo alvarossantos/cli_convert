@@ -7,9 +7,13 @@ import (
 	"strings"
 
 	"cli-convert/ai"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	// Carrega .env se existir (não sobrescreve variáveis já definidas)
+	godotenv.Load()
+
 	if len(os.Args) < 2 {
 		setGlobalUsage()
 		os.Exit(1)

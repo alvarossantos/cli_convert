@@ -63,6 +63,48 @@ func ensureOutputExtension(filename, desiredExt string) string {
 	return filename
 }
 
+// dispatchConversion roteia a conversão com base nos formatos de origem e destino.
+func dispatchConversion(from, to string, input io.Reader, output io.Writer, delimiter rune, rootName string) error {
+	if from == to {
+		return fmt.Errorf("source and destination formats are the same: %s", from)
+	}
+
+	key := from + "→" + to
+
+	switch key {
+	case "json→csv":
+		return convertJsonToCsv(input, output, delimiter)
+	case "json→xml":
+		return convertJsonToXml(input, output, rootName)
+	case "json→yaml":
+		return convertJsonToYaml(input, output)
+
+	case "csv→json":
+		return convertCsvToJson(input, output, delimiter)
+	case "csv→xml":
+		return convertCsvToXml(input, output, delimiter, rootName)
+	case "csv→yaml":
+		return convertCsvToYaml(input, output, delimiter)
+
+	case "xml→json":
+		return convertXmlToJson(input, output)
+	case "xml→csv":
+		return convertXmlToCsv(input, output, delimiter)
+	case "xml→yaml":
+		return convertXmlToYaml(input, output)
+
+	case "yaml→json":
+		return convertYamlToJson(input, output)
+	case "yaml→csv":
+		return convertYamlToCsv(input, output, delimiter)
+	case "yaml→xml":
+		return convertYamlToXml(input, output, rootName)
+
+	default:
+		return fmt.Errorf("unsupported conversion: %s → %s", from, to)
+	}
+}
+
 func WriteAsYaml(data interface{}, output io.Writer) error {
 	return writeYamlRecursive(output, data, 0)
 }

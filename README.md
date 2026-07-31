@@ -1,178 +1,150 @@
-# CLI Convert – Universal File Converter
+# CLI Convert – Conversor Universal de Arquivos
 
-**CLI Convert** is a powerful and flexible command-line interface (CLI) tool built with **Go (Golang)**, designed to streamline the conversion of data files between various formats. It currently supports seamless transformations between **JSON, CSV, XML, and YAML**, with a focus on performance and ease of use.
+**CLI Convert** é uma ferramenta de linha de comando (CLI) poderosa e flexível, construída com **Go (Golang)**, projetada para converter arquivos de dados entre vários formatos. Suporta transformações entre **JSON, CSV, XML e YAML**, com foco em performance e facilidade de uso.
 
-This tool is ideal for developers, data engineers, and anyone who frequently works with different data formats and needs a quick, reliable way to convert them.
+Ideal para desenvolvedores, engenheiros de dados e qualquer pessoa que trabalhe frequentemente com diferentes formatos de dados.
 
 ---
 
-## ✨ Features
+## ✨ Funcionalidades
 
-* **Bidirectional Conversion:** Convert between JSON, CSV, XML, and YAML formats.
+* **Conversão Bidirecional:** Converta entre JSON, CSV, XML e YAML.
   * `JSON <-> CSV`
   * `JSON <-> XML`
   * `JSON <-> YAML`
   * `CSV <-> XML`
   * `CSV <-> YAML`
   * `XML <-> YAML`
-* **Robust File Validation:** Ensures input files exist, are not empty, and adhere to their specified format before conversion.
-* **Intuitive Command-Line Interface:** Easy-to-use flags for specifying input/output, source/target formats, and conversion-specific options.
-* **Go-powered Performance:** Leverages Go's concurrency and efficiency for fast data processing.
-* **Extensible Architecture:** Modular design allows for easy addition of new data formats and conversion logic in the future.
-* **Intelligent Type Handling:** Automatically detects and converts numerical and boolean values from source formats into appropriate JSON types, preventing numbers from being treated as strings.
-* **XML to JSON Order Preservation:** When converting XML to JSON, the tool now preserves the order of elements, ensuring a more faithful representation of the original data structure.
+* **Auto-detecção de Formato:** Detecta automaticamente o formato de entrada (não precisa de `--from`).
+* **Validação Robusta:** Garante que arquivos de entrada existem, não estão vazios e seguem o formato especificado.
+* **Tratamento Inteligente de Tipos:** Detecta e converte automaticamente valores numéricos e booleanos.
+* **Preservação de Ordem XML:** Mantém a ordem dos elementos ao converter XML para JSON.
+* **🤖 Integração com IA (Opcional):** Gere schemas, pergunte sobre dados e detecte formatos usando IA.
 
 ---
 
-## 🚀 Installation
+## 🚀 Instalação
 
-To get started with CLI Convert, ensure you have Go installed on your system. Then, you can build the executable:
+Certifique-se de ter o Go instalado. Então:
 
 ```bash
-# Clone the repository (if not already done)
-git clone https://github.com/your-username/cli_convert.git # Replace with actual repo URL
-cd cli_convert
+# Clone o repositório
+git clone https://github.com/alvarossantos/cli_convert.git
+cd cli_build
 
-# Build the executable
+# Compile o executável
 go build
 
-# (Optional) Move the executable to your PATH for global access
+# (Opcional) Mova para seu PATH
 mv cli-convert /usr/local/bin/
 ```
 
 ---
 
-## 📖 Usage
+## 📖 Uso
 
-The `cli-convert` tool uses a single mandatory command: `convert`. All operations are performed using this command followed by specific flags.
-
-### Basic Syntax
+### Comando Principal: `convert`
 
 ```bash
-cli-convert convert --from <source_format> --to <target_format> --input <input_file> --output <output_file> [options]
+cli-convert convert --from <formato> --to <formato> --input <arquivo> --output <arquivo> [opções]
 ```
 
-### Available Flags
+### Flags
 
-* `--input <file_path>` (Required)
+| Flag | Obrigatório | Descrição |
+|------|:-----------:|-----------|
+| `--input` | ✅ | Caminho do arquivo de entrada |
+| `--output` | ✅ | Caminho do arquivo de saída |
+| `--from` | ❌ | Formato de origem (detectado automaticamente se omitido) |
+| `--to` | ✅ | Formato de destino |
+| `--delimiter` | ❌ | Delimitador CSV (padrão: `,`) |
+| `--root` | ❌ | Nome do elemento raiz para XML (padrão: `root`) |
 
-  * Specifies the path to the source file you want to convert.
-  * Example: `--input data.json`
-* `--output <file_path>` (Required)
-
-  * Specifies the path where the converted file will be saved.
-  * The tool will automatically append the correct file extension (`.json`, `.csv`, `.xml`,`.yaml`) if not provided.
-  * Example: `--output converted_data.csv`
-* `--from <format>` (Required)
-
-  * Defines the format of the input file.
-  * Accepted values: `json`, `csv`, `xml`,`.yaml`
-  * Example: `--from yaml`
-* `--to <format>` (Required)
-
-  * Defines the desired format for the output file.
-  * Accepted values: `json`, `csv`, `xml`, `yaml`
-  * Example: `--to csv`
-* `--delimiter <char>` (Optional)
-
-  * Used when converting to or from CSV files.
-  * Specifies the character used to separate values in the CSV.
-  * Default: `,` (comma)
-  * Example: `--delimiter ';'` (for semicolon-separated CSV)
-* `--root <string>` (Optional)
-
-  * Used specifically when converting from JSON to XML.
-  * Defines the name of the root element in the generated XML output.
-  * Default: `root`
-  * Example: `--root MyDataCollection`
-
-### Conversion Examples
-
-Here are some common conversion scenarios:
-
-#### ➡️ JSON to CSV
+### Exemplos de Conversão
 
 ```bash
-cli-convert convert --from json --to csv --input input.json --output output.csv
+# JSON para CSV
+cli-convert convert --from json --to csv --input data.json --output data.csv
 
-# Using a custom delimiter
-cli-convert convert --from json --to csv --input input.json --output output.csv --delimiter ';'
+# CSV para JSON (com delimitador ponto-e-vírgula)
+cli-convert convert --from csv --to json --input dados.csv --output dados.json --delimiter ';'
 
-#### ➡️ JSON to XML
+# Auto-detectar formato e converter para JSON
+cli-convert convert --to json --input dados.csv --output dados.json
 
-```bash
-cli-convert convert --from json --to xml --input input.json --output output.xml
-# With a custom root element name
-cli-convert convert --from json --to xml --input input.json --output output.xml --root MyJsonData
-```
+# XML para YAML
+cli-convert convert --from xml --to yaml --input config.xml --output config.yaml
 
-#### ➡️ CSV to JSON
-
-```bash
-cli-convert convert --from csv --to json --input input.csv --output output.json
-# With a custom delimiter for the input CSV
-cli-convert convert --from csv --to json --input input.csv --output output.json --delimiter ';'
-```
-
-#### ➡️ CSV to XML
-
-```bash
-cli-convert convert --from csv --to xml --input input.csv --output output.xml
-# With a custom delimiter for the input CSV and a custom root element
-cli-convert convert --from csv --to xml --input input.csv --output output.xml --delimiter ';' --root CsvRecords
-```
-
-#### ➡️ XML to JSON
-
-```bash
-cli-convert convert --from xml --to json --input input.xml --output output.json
-```
-
-#### ➡️ XML to CSV
-
-```bash
-cli-convert convert --from xml --to csv --input input.xml --output output.csv
-cli-convert convert --from xml --to csv --input input.xml --output output.csv --delimiter '|'
-```
-
-#### ➡️ YAML Conversions
-
-```bash
-# YAML to JSON
-cli-convert convert --from yaml --to json --input input.yaml --output output.json
-
-# YAML to CSV
-cli-convert convert --from yaml --to csv --input input.yaml --output output.csv --delimiter ','
-
-# YAML to XML
-cli-convert convert --from yaml --to xml --input input.yaml --output output.xml --root YamlData
-
-# JSON to YAML
-cli-convert convert --from json --to yaml --input input.json --output output.yaml
+# YAML para XML (com elemento raiz customizado)
+cli-convert convert --from yaml --to xml --input dados.yaml --output dados.xml --root MeusDados
 ```
 
 ---
 
-## ⚠️ Error Handling
+## 🤖 Comandos de IA
 
-The tool provides informative error messages for common issues such as:
+Os comandos de IA requerem configuração no arquivo `.env`. Copie `.env.example` para `.env` e configure sua chave de API.
 
-* Missing required flags (`--input`, `--output`, `--from`, `--to`).
-* Invalid or non-existent input files.
-* Unsupported conversion formats.
-* Malformed input data (e.g., invalid JSON, CSV, or XML structure).
-* Delimiter not being a single character.
+### `detect` — Auto-detectar Formato
 
-Always check the output for error messages if a conversion fails.
+```bash
+cli-convert detect --input arquivo.json
+# Saída: Detected format: json
+```
+
+### `schema` — Gerar JSON Schema
+
+Para arquivos JSON, o schema é gerado localmente. Para outros formatos, usa IA.
+
+```bash
+cli-convert schema --input dados.csv
+```
+
+### `ask` — Perguntar sobre os Dados
+
+Faça perguntas em linguagem natural sobre o conteúdo de um arquivo:
+
+```bash
+cli-convert ask --input vendas.csv --question "Qual o total de vendas?"
+cli-convert ask --input usuarios.json --question "Quantos usuários são maiores de 18 anos?"
+```
+
+### Configuração de IA
+
+Copie `.env.example` para `.env`:
+
+```bash
+cp .env.example .env
+```
+
+Configure o provedor e a chave de API:
+
+| Provedor | Variável | Modelo Padrão |
+|----------|----------|---------------|
+| OpenRouter | `OPENROUTER_API_KEY` | `inclusionai/ling-3.0-flash:free` |
+| OpenAI | `OPENAI_API_KEY` | `gpt-4o-mini` |
+| Gemini | `GEMINI_API_KEY` | `gemini-2.0-flash` |
 
 ---
 
-## 🤝 Contributing
+## ⚠️ Tratamento de Erros
 
-Contributions are welcome! If you have suggestions for new features, bug fixes, or improvements, please feel free to open an issue or submit a pull request.
+A ferramenta fornece mensagens de erro informativas para:
+
+* Flags obrigatórias ausentes (`--input`, `--output`, `--to`)
+* Arquivos de entrada inválidos ou inexistentes
+* Formatos de conversão não suportados
+* Dados de entrada malformados
+* Delimitador com mais de um caractere
 
 ---
 
-## 📄 License
+## 🤝 Contribuições
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. (Note: Create a LICENSE file if you haven't already.)
+Contribuições são bem-vindas! Sinta-se à livre para abrir issues ou enviar pull requests.
+
+---
+
+## 📄 Licença
+
+Este projeto está licenciado sob a MIT License.

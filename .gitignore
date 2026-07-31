@@ -3,3 +3,4 @@ cli-convert
 *.csv
 *.xml
 *.yaml
+.env
